@@ -1,0 +1,101 @@
+#+TITLE: Colorhistogram
+#+BEGIN_SRC jupyter-python :session py
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib import colors
+img = cv2.imread("/home/claros/Documents/image_processing/Scarlet_Macaw_Parrot.jpg")
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+print("HSV: ",hsv[0][0])
+print("BGR: ",img[0][0])
+h, s, v = hsv.shape
+print(h,s,v)
+#+END_SRC
+
+#+RESULTS:
+: HSV:  [ 64 175  51]
+: BGR:  [21 51 16]
+: 600 800 3
+
+#+RESULTS:
+: 600
+
+#+BEGIN_SRC jupyter-python :session py
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#+begin_src jupyter-python :session py
+img2 = plt.imread("/home/claros/Documents/image_processing/Scarlet_Macaw_Parrot.jpg")
+#print(colors.rgb_to_hsv(img2.reshape(h*s,v)))
+hsv2 = colors.rgb_to_hsv(img2).reshape((h*s,v))
+hsv2.T[1]=1
+hsv2.T[2]=255
+hsv2
+
+thresholded = np.rint(colors.hsv_to_rgb(hsv2.reshape(h,s,v))).astype(int)
+
+plt.imshow(thresholded)
+plt.savefig('thresholded.png')
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/3586a318e6ff2c98c31ad73b22d6a0f79f725567.png]]
+:RESULTS:
+| array | ((13237 5474 3074 2561 3422 3702 3695 3189 3581 3121 2724 2390 1588 1709 1176 1398 1085 1030 741 884 1028 1251 1438 1646 1951 1674 1679 904 774 938 1249 591 882 1000 1180 2177 1134 1441 1836 2303 2857 2882 4927 6313 7128 8667 10712 9104 9331 11181 14234 13112 11989 15723 9684 17090 17537 14673 16254 16008 11577 13901 12078 14075 11618 12836 10997 8153 7362 7646 4342 3217 2280 1928 2802 2632 553 298 229 720 2852 90 95 1070 277 200 102 530 84 65 600 59 74 131 65 128 612 90 189 164 185 397 281 664 543 794 1049 1180 1359 1521 2042 1722 1432 1107 1226 842 952 685 468 369 771 176 200 157 168 319 232 98 97 93 95 48 170 145 41 57 68 29 99 38 263 92 61 40 49 128 92 48 55 31 138 26 39 89 31 67 198 80 87 152 131 95 131 122 230 504 141 189 147 202 545 252 344 674 676 744 872 1642 5690)) | array | ((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175 176 177 178 179)) | <a | list | of | 179 | Patch | objects> |
+[[file:./.ob-jupyter/107aa8fcbba44f04e2e7fd28f5029a8d0bb2ceb2.png]]
+:END:
+
+
+
+#+BEGIN_SRC jupyter-python :session py
+cm = plt.cm.hsv
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+: <matplotlib.colors.LinearSegmentedColormap at 0x7fcf3a21bbe0>
+#+BEGIN_SRC jupyter-python :session py
+
+cm = plt.cm.hsv
+hsvarr = hsv.reshape((h*s,v))
+n,bins, patches = plt.hist(hsvarr.T[0],bins=179,density=True)
+for i,p in enumerate(patches):
+    plt.setp(p,'facecolor',cm(i/179))
+plt.savefig('imagetransform.png',dpi=300)
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:./.ob-jupyter/5134af81a2093fbfeb031529d85d1967c250e9f2.png]]

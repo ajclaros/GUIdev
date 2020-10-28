@@ -1,0 +1,93 @@
+#+TITLE: colorprocess
+
+#+BEGIN_SRC jupyter-python :session py :async yes
+
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+import pandas as pd
+from sklearn.cluster import KMeans
+image = cv2.imread('/home/claros/Documents/image_processing/Scarlet_Macaw_Parrot.jpg', cv2.IMREAD_UNCHANGED)
+
+#cv2.imshow("Scarlet_Macaw_Parrot", image)
+pixel_values= image.reshape((-1,3))
+pixel_values= np.float32(pixel_values)
+criteria = (cv2.TERM_CRITERIA_EPS +cv2.TERM_CRITERIA_MAX_ITER, 10000, 0.2)
+
+k=10
+_, labels, (centers) = cv2.kmeans(pixel_values,k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+centers = np.uint8(centers)
+labels=labels.flatten()
+segmented_image=centers[labels.flatten()]
+segmented_image=segmented_image.reshape(image.shape)
+
+masked_arr = []
+for i in range(k):
+    masked_arr.append(centers.copy())
+    masked_arr[i][:]=[255,255,255]
+    masked_arr[i][i]=centers[i]
+print('done')
+#+END_SRC
+
+#+RESULTS:
+: done
+
+#+BEGIN_SRC jupyter-python :session py
+fig, ax = plt.subplots(4,3, figsize=(40,40))
+ax[0,0].imshow(image)
+ax[0,0].set_title('Original', fontsize=30)
+ax[0,1].imshow(segmented_image)
+ax[0,1].set_title('Clustered', fontsize=30)
+for ind in range(12):
+    if ind<2:
+        continue
+    i  = ind//3
+    j = ind%3
+    segmented = masked_arr[ind-2][labels.flatten()]
+    segmented = segmented.reshape(image.shape)
+    ax[i,j].imshow(segmented)
+    ax[i,j].set_title("Cluster: {}".format(ind-2), fontsize=30)
+#hist = ax[3,1].bar(np.unique(labels), np.unique(labels, return_counts=True)[1]/sum(np.unique(labels,return_counts=True)[1]))
+#for i, bar in enumerate(hist):
+#    bar.set_facecolor(centers[i]/255)
+plt.tight_layout()
+plt.savefig("/home/claros/org/research/segmented.png", dpi=400)
+
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:./.ob-jupyter/7e398d5b072ed7271507b48e78797b542a4b3280.png]]
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+: <matplotlib.image.AxesImage at 0x7f03ea6577f0>
+[[file:./.ob-jupyter/f74ede6a88f2b251030e46612b311c5d4d1a2206.png]]
+:END:
+
+#+BEGIN_SRC jupyter-python :session py :async yes
+his = plt.bar(np.unique(labels), np.unique(labels, return_counts=True)[1]/sum(np.unique(labels,return_counts=True)[1]))
+for i,bar in enumerate(his):
+    bar.set_facecolor(centers[i]/255)
+plt.savefig('/home/claros/org/research/segmented_histogram.png')
+#rectangle.set_facecolor(centers[i])
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC jupyter-python :session py :async yes
+import numpy
+
+
+
+#+END_SRC
+
+#+RESULTS:
