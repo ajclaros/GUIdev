@@ -84,12 +84,15 @@ class StartPage(tk.Frame):
 class Analysis(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = ttk.Label(self, text="First Page", font=LARGE_FONT)
+        label = ttk.Label(self, text="Analysis"
         label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
+        buttons.append(ttk.Button(self, text= "First page",
+                                  command = lambda: controller.show_frame(StartPage)))
         buttons.append(ttk.Button(self, text="Color Histogram",
                                   command = lambda: self.color_histogram(controller)))
-        buttons[0].grid(row=2, column=0)
+        buttons[1].grid(row=2, column=0)
+
 
     def color_histogram(self, content):
         image_arr = []
@@ -100,7 +103,7 @@ class Analysis(tk.Frame):
         cm = plt.cm.hsv
         fig = plt.figure()
         ax = fig.add_axes([0.05, 0.2, 0.9,0.7])
-        ax1 = fig.add_axes([0.05, 0.0, 0.9, 0.1])
+        ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
         cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = cm, norm=norm, orientation = 'horizontal')
         edgecolors = ['k', 'b', 'g', 'r', 'c', 'm', 'y']
         for i, image in enumerate(content.images):
@@ -116,6 +119,7 @@ class Analysis(tk.Frame):
         ax.set_xlim(0,255.0)
         ax.set_ylim(0,.3)
         ax.legend()
+        plt.tight_layout()
         plt.show()
 
 app = GuiApp()
