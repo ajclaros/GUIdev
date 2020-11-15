@@ -95,7 +95,7 @@ class StartPage(tk.Frame):
         ax.set_yticks(ticks=np.arange(len(content.filenames)))
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
         ax.set_yticklabels(labels = content.filenames, fontdict = {'fontsize':4})
-        hm = ax.imshow(correlation, cmap='winter',interpolation = 'nearest')
+        hm = ax.imshow(correlation, cmap='Set1',interpolation = 'nearest')
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
@@ -129,15 +129,6 @@ class StartPage(tk.Frame):
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20)
-
-
-#        n, bins, patches = ax.hist(
-#            image_arr[-1].T[0], bins=255, density=True, alpha=0.5, label=content.filenames[i])
-#
-#        ax.set_xlim(0,255.0)
-#        ax.set_ylim(0,.3)
-#        ax.legend()
-#        plt.show()
     def select_directory(self, content, known='yes'):
         if known == 'yes':
             folders = ['/home/claros/Dropbox/patternize/blueyellow'
