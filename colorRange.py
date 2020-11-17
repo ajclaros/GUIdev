@@ -1,3 +1,4 @@
+from collections import deque
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,6 +23,7 @@ class GuiApp(tk.Tk):
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
+        self.nbins = 255
         self.panels = []
         self.images = []
         self.filenames = []
@@ -57,11 +59,13 @@ class StartPage(tk.Frame):
         label = ttk.Label(self, text="First Page", font=LARGE_FONT)
         label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
+
+        buttons.append(ttk.Button(self, text="quit",
+                                  command = lambda: controller.destroy() ))
         buttons.append(ttk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='yes')))
 #        buttons.append(ttk.Button(self, text="Select Image",
 #                                      command=lambda: self.select_image(controller, self.total_images)))
-        buttons.append(ttk.Button(self, text="Analysis page", command=lambda: controller.show_frame(Analysis)))
         buttons.append(ttk.Button(self, text="Color Histogram",
                                   command = lambda: self.color_histogram(controller)))
         buttons.append(ttk.Button(self, text="show folders",
@@ -78,8 +82,10 @@ class StartPage(tk.Frame):
                 image = np.float32(image)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 hue = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
+                hue = (hue+30)%255
+                hue = abs(hue-255)
                 content.hues.append(np.histogram(
-                   hue, bins=255, density=True)[0])
+                   hue, bins=content.nbins, density=True)[0])
                 print('folder: {}, photo:({}/{})'.format(folder_idx, j+1, len(folder)))
 
         content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
@@ -105,17 +111,25 @@ class StartPage(tk.Frame):
     def create_histogram(self, content):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
-        fig = plt.figure()
-        #fig = plt.figure(figsize=(20,10))
+        #fig = plt.figure()
+        fig = plt.figure(figsize=(20,10))
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=255)
         cm = plt.cm.hsv
-        cb1 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cm, norm=norm, orientation='horizontal')
+        cmaplist = [cm(i) for i in range(cm.N)]
+        cmaplist = deque(cmaplist)
+        cmaplist.rotate(30)
+        cmaplist.reverse()
+        cm = matplotlib.colors.LinearSegmentedColormap.from_list(
+            'Custom cmap', cmaplist, cm.N)
+        bounds = np.arange(content.nbins)
+        norm = matplotlib.colors.BoundaryNorm(bounds, cm.N)
+
+        cb1 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cm, spacing='proportional', ticks=np.arange(0,content.nbins,5), boundaries= bounds, format='%1i', norm=norm, orientation='horizontal')
         folder_colors = ['b','y']
         for i, folder in enumerate(folders):
-            print(folder)
             data = folder.mean().values
+            data = data/data.sum()
             #y, bin_edges = np.histogram(data, bins = 100)
             #bin_centers = 0.5*(bin_edges[1:]+bin_edges[:-1])
             err = stats.sem(folder)
@@ -125,7 +139,7 @@ class StartPage(tk.Frame):
             ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
-        ax.set_xlim(0,255)
+        ax.set_xlim(0,content.nbins)
         #plt.tight_layout()
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
@@ -158,7 +172,7 @@ class StartPage(tk.Frame):
             self.total_images = 0
         if len(content.foldernames)==2:
             self.create_df(content)
-            self.create_heatmap(content)
+           # self.create_heatmap(content)
             self.create_histogram(content)
 
 
