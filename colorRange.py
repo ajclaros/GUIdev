@@ -60,7 +60,7 @@ class StartPage(tk.Frame):
         label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
         buttons.append(ttk.Button(self, text="Select Directory",
-                                      command=lambda: self.select_directory(controller, known='yes')))
+                                      command=lambda: self.select_directory(controller, known='no')))
 #        buttons.append(ttk.Button(self, text="Select Image",
 #                                      command=lambda: self.select_image(controller, self.total_images)))
         buttons.append(ttk.Button(self, text="Analysis page", command=lambda: controller.show_frame(Analysis)))
@@ -79,9 +79,10 @@ class StartPage(tk.Frame):
                 bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 image = np.float32(image)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                hue = image[np.where(bw<200)].T[0] #hue=0, sat=1, val = 2
+                hue = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
                 content.hues.append(np.histogram(
                    hue, bins=255, density=True)[0])
+                print('folder: {}, photo:({}/{})'.format(folder_idx, j+1, len(folder)))
 
         content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
 
@@ -126,8 +127,8 @@ class StartPage(tk.Frame):
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
         ax.set_xlim(0,255)
-        plt.tight_layout()
-#        ax.set_ylim(0, 0.0002)
+        #plt.tight_layout()
+#       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20)
@@ -138,7 +139,7 @@ class StartPage(tk.Frame):
                        ,'/home/claros/Dropbox/patternize/Yellow']
             for i, folder in enumerate(folders):
                 print('--------------------------------')
-                print('Folder: {} done'.format(i))
+                print('Loading Folder: {} done'.format(i))
 
                 os.chdir(folder)
                 content.images.append([])
@@ -152,8 +153,9 @@ class StartPage(tk.Frame):
             content.foldernames.append(folder)
             content.images.append([])
             os.chdir(folder)
-            for files in os.listdir():
+            for i, files in enumerate(os.listdir()):
                 self.select_image(content, self.total_images, files)
+                print('loading: photo ({}/{})'.format(i+1, len(os.listdir())))
             self.total_images = 0
         if len(content.foldernames)==2:
             self.create_df(content)
