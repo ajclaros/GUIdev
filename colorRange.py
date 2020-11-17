@@ -11,8 +11,6 @@ from PIL import Image, ImageTk
 from tkinter import filedialog
 import pandas as pd
 from scipy import stats
-from skimage import io
-from skimage import color
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -60,7 +58,7 @@ class StartPage(tk.Frame):
         label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
         buttons.append(ttk.Button(self, text="Select Directory",
-                                      command=lambda: self.select_directory(controller, known='no')))
+                                      command=lambda: self.select_directory(controller, known='yes')))
 #        buttons.append(ttk.Button(self, text="Select Image",
 #                                      command=lambda: self.select_image(controller, self.total_images)))
         buttons.append(ttk.Button(self, text="Analysis page", command=lambda: controller.show_frame(Analysis)))
@@ -99,7 +97,7 @@ class StartPage(tk.Frame):
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=1, column=0, pady = 20)
+        content.panels[-1].get_tk_widget().grid(row=1, column=0, pady = 20, padx=15)
 
 
 
@@ -107,7 +105,8 @@ class StartPage(tk.Frame):
     def create_histogram(self, content):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
-        fig = plt.figure(figsize=(20,10))
+        fig = plt.figure()
+        #fig = plt.figure(figsize=(20,10))
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
         norm = matplotlib.colors.Normalize(vmin=0, vmax=255)
@@ -123,7 +122,7 @@ class StartPage(tk.Frame):
             label = content.foldernames[i]
             label = label.split('/')
             label = label[-1]
-            ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=5)
+            ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
         ax.set_xlim(0,255)
@@ -131,7 +130,7 @@ class StartPage(tk.Frame):
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20)
+        content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20, padx = 15)
 
     def select_directory(self, content, known='yes'):
         if known == 'yes':
@@ -159,7 +158,7 @@ class StartPage(tk.Frame):
             self.total_images = 0
         if len(content.foldernames)==2:
             self.create_df(content)
-            #self.create_heatmap(content)
+            self.create_heatmap(content)
             self.create_histogram(content)
 
 
