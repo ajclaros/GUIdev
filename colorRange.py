@@ -11,6 +11,8 @@ from PIL import Image, ImageTk
 from tkinter import filedialog
 import pandas as pd
 from scipy import stats
+from skimage import io
+from skimage import color
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -70,20 +72,17 @@ class StartPage(tk.Frame):
             button.grid(row=0, column=i)
 
     def create_df(self, content):
-        h = []
-        s = []
-        v = []
-        image_idx=0
         for folder_idx, folder in enumerate(content.images):
             for j, image in enumerate(folder):
+                #bw = color.rgb2gray(image)
+                #image = color.rgb2hsv(image)
+                bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                image = np.float32(image)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                h.append(image.shape[0])
-                s.append(image.shape[1])
-                v.append(image.shape[2])
-                reshaped_im = image.reshape((h[-1]*s[-1],v[-1]))
+                hue = image[np.where(bw<200)].T[0] #hue=0, sat=1, val = 2
                 content.hues.append(np.histogram(
-                   reshaped_im.T[0], bins=100)[0])
-                image_idx += 1
+                   hue, bins=255, density=True)[0])
+
         content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
 
     def create_heatmap(self, content):
@@ -107,38 +106,46 @@ class StartPage(tk.Frame):
     def create_histogram(self, content):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
-        fig = plt.figure()
+        fig = plt.figure(figsize=(20,10))
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
+        norm = matplotlib.colors.Normalize(vmin=0, vmax=255)
         cm = plt.cm.hsv
         cb1 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cm, norm=norm, orientation='horizontal')
+        folder_colors = ['b','y']
         for i, folder in enumerate(folders):
             print(folder)
             data = folder.mean().values
-            y, bin_edges = np.histogram(data, bins = 100, density = True)
-            bin_centers = 0.5*(bin_edges[1:]+bin_edges[:-1])
-            menStd = np.std(y)
+            #y, bin_edges = np.histogram(data, bins = 100)
+            #bin_centers = 0.5*(bin_edges[1:]+bin_edges[:-1])
+            err = stats.sem(folder)
             label = content.foldernames[i]
             label = label.split('/')
             label = label[-1]
-            ax.plot(bin_centers, y, label = label)
-            ax.errorbar(bin_centers, y, yerr = menStd, fmt = 'o')
+            ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=5)
+            ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
-        ax.set_ylim(0, 0.0002)
+        ax.set_xlim(0,255)
+        plt.tight_layout()
+#        ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20)
+
     def select_directory(self, content, known='yes'):
         if known == 'yes':
-            folders = ['/home/claros/Dropbox/patternize/blueyellow'
-                       ,'/home/claros/Dropbox/patternize/6.15.20']
-            for folder in folders:
+            folders = ['/home/claros/Dropbox/patternize/Blue'
+                       ,'/home/claros/Dropbox/patternize/Yellow']
+            for i, folder in enumerate(folders):
+                print('--------------------------------')
+                print('Folder: {} done'.format(i))
+
                 os.chdir(folder)
                 content.images.append([])
                 content.foldernames.append(folder)
                 for files in os.listdir():
                     self.select_image(content, self.total_images, files)
+                print('{} images uploaded'.format(len(os.listdir())))
                 self.total_images = 0
         else:
             folder = filedialog.askdirectory()
@@ -150,20 +157,20 @@ class StartPage(tk.Frame):
             self.total_images = 0
         if len(content.foldernames)==2:
             self.create_df(content)
-            self.create_heatmap(content)
+            #self.create_heatmap(content)
             self.create_histogram(content)
 
 
     def select_image(self, content, gridx, files):
         path = files
-        name=path.split('/')
+        name= path.split('/')
         name = name[-1].split('.')
         name = name[0]
         content.filenames.append(name)
         if len(path) > 0:
             image = cv2.imread(path)
-            imagecv = image
-            content.images[-1].append(imagecv)
+            imagefile = image
+            content.images[-1].append(imagefile)
             self.total_images += 1
 
 
