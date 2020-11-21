@@ -74,7 +74,7 @@ class StartPage(tk.Frame):
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
 
-    def create_df(self, content, lab=False):
+    def create_df(self, content, lab=False, channel=None):
         for folder_idx, folder in enumerate(content.images):
             for j, image in enumerate(folder):
                 #bw = color.rgb2gray(image)
@@ -82,7 +82,7 @@ class StartPage(tk.Frame):
                 bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 if lab == True:
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
-                    data = image[np.where(bw<255)].T[2] #lum=0, A=1, B = 2
+                    data = image[np.where(bw<255)].T[channel] #lum=0, A=1, B = 2
                 else:
                     image = np.float32(image)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -127,7 +127,7 @@ class StartPage(tk.Frame):
         content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20, padx = 15)
 
 
-    def create_histogram(self, content, lab=False):
+    def create_histogram(self, content, lab=False, channel=1):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
         #fig = plt.figure()
@@ -135,7 +135,7 @@ class StartPage(tk.Frame):
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
         if lab==True:
-            cm= plt.cm.cividis
+            cm= plt.cm.cool if channel==1 else plt.cm.cividis
             indices = np.arange(content.nbins)
         else:
             cm = plt.cm.hsv
@@ -225,8 +225,8 @@ class StartPage(tk.Frame):
                 print('loading: photo ({}/{})'.format(i+1, len(os.listdir())))
             self.total_images = 0
         if len(content.foldernames)==2:
-            self.create_df(content, lab=False)
-            self.create_histogram(content, lab=False)
+            self.create_df(content, lab=True, channel=1)
+            self.create_histogram(content, lab=True, channel=1)
             #self.create_radarplot(content)
             #self.create_heatmap(content)
 
