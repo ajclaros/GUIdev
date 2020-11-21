@@ -4,5 +4,5 @@
 Processes folders of photos and creates a dataframe for analysis. Current implementation works with hue, but switching to any other value is not difficult
 Two visualizations are: Heatmap of a Kruskall Wallice test comparing individual photos and a histogram of binned hues by folder.
 ![](first_photo.png)
-![](cielab.png)
+![](cielab000.png)
 
