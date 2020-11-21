@@ -1,4 +1,5 @@
 from collections import deque
+import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib
 import matplotlib.pyplot as plt
@@ -73,29 +74,31 @@ class StartPage(tk.Frame):
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
 
-    def create_df(self, content, shift=False):
+    def create_df(self, content, lab=False):
         for folder_idx, folder in enumerate(content.images):
             for j, image in enumerate(folder):
                 #bw = color.rgb2gray(image)
                 #image = color.rgb2hsv(image)
                 bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                image = np.float32(image)
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                hue = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
-                if shift==True:
-                    hue = (hue+30)%255
-                    hue = abs(hue-255)
+                if lab == True:
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
+                    data = image[np.where(bw<255)].T[2] #lum=0, A=1, B = 2
+                else:
+                    image = np.float32(image)
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                    data = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
                 content.hues.append(np.histogram(
-                   hue, bins=content.nbins, density=True)[0])
+                   data, bins=content.nbins, density=True)[0])
                 print('folder: {}, photo:({}/{})'.format(folder_idx, j+1, len(folder)))
 
         content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
+        print(content.hues)
 
     def create_heatmap(self, content):
-        correlation = content.hues.corr(method=kruskal)
+        correlation = content.hues.corr(method=kstest)
         fig = plt.figure()
         ax = fig.add_subplot()
-        ax.set_title('Kruskal Wallice')
+        ax.set_title('KS-test')
         ax.set_xticks(ticks=np.arange(len(content.filenames)))
         ax.set_yticks(ticks=np.arange(len(content.filenames)))
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
@@ -124,18 +127,27 @@ class StartPage(tk.Frame):
         content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20, padx = 15)
 
 
-    def create_histogram(self, content):
+    def create_histogram(self, content, lab=False):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
         #fig = plt.figure()
         fig = plt.figure(figsize=(20,10))
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
-        cm = plt.cm.hsv
+        if lab==True:
+            cm= plt.cm.cividis
+            indices = np.arange(content.nbins)
+        else:
+            cm = plt.cm.hsv
+            foldersum = folders[0].mean()+folders[1].mean()
+            foldersum = foldersum/foldersum.sum()
+            indices = np.where(foldersum>0.003)
+            indices = np.arange(content.nbins)
         cmaplist = [cm(i) for i in range(cm.N)]
         cmaplist = deque(cmaplist)
-        cmaplist.rotate(30)
-        cmaplist.reverse()
+        if lab==False:
+            cmaplist.rotate(30)
+            cmaplist.reverse()
         cm = matplotlib.colors.LinearSegmentedColormap.from_list(
             'Custom cmap', cmaplist, cm.N)
         bounds = np.arange(content.nbins)
@@ -145,10 +157,11 @@ class StartPage(tk.Frame):
         folder_colors = ['b','y']
         for i, folder in enumerate(folders):
             data = folder.mean().values
-#            data = deque(data)
-#            data.rotate(30)
-#            data.reverse()
-#            data = np.array(data)
+            data = deque(data)
+            if lab==False:
+                data.rotate(30)
+                data.reverse()
+            data = np.array(data)
             data = data/data.sum()
             #y, bin_edges = np.histogram(data, bins = 100)
             #bin_centers = 0.5*(bin_edges[1:]+bin_edges[:-1])
@@ -159,7 +172,8 @@ class StartPage(tk.Frame):
             ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
-        ax.set_xlim(0,content.nbins)
+        ax.set_xlim(indices[0],indices[-1])
+        ax1.set_xlim(indices[0], indices[-1])
         #plt.tight_layout()
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
@@ -205,9 +219,10 @@ class StartPage(tk.Frame):
                 print('loading: photo ({}/{})'.format(i+1, len(os.listdir())))
             self.total_images = 0
         if len(content.foldernames)==2:
-            self.create_df(content, shift=True)
-            self.create_histogram(content)
+            self.create_df(content, lab=False)
+            self.create_histogram(content, lab=False)
             #self.create_radarplot(content)
+            #self.create_heatmap(content)
 
 def kruskal(a, b):
     statistic, pval = stats.kruskal(a,b)
@@ -216,6 +231,9 @@ def kruskal(a, b):
 def chisquare(a, b):
     statistic, pval = stats.chisquare(a,b)
     return pval
+def kstest(a, b):
+    D, p = stats.kstest(a,b)
+    return p
 
 app = GuiApp()
 app.mainloop()
