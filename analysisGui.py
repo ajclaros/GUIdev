@@ -141,8 +141,14 @@ class StartPage(tk.Frame):
             cm = plt.cm.hsv
             foldersum = folders[0].mean()+folders[1].mean()
             foldersum = foldersum/foldersum.sum()
-            indices = np.where(foldersum>0.003)
-            indices = np.arange(content.nbins)
+            foldersum = deque(foldersum)
+            foldersum.rotate(30)
+            foldersum.reverse()
+            foldersum = np.array(foldersum)
+
+            indices = np.where(foldersum>0.005)
+            indices = indices[0]
+            print(indices)
         cmaplist = [cm(i) for i in range(cm.N)]
         cmaplist = deque(cmaplist)
         if lab==False:
