@@ -53,26 +53,55 @@ class GuiApp(tk.Tk):
 
 
 class StartPage(tk.Frame):
-    total_images = 0
-    total_folders = 0
     def __init__(self, parent, controller):
+
+        self.num_graphs = 0
+        self.total_images = 0
         tk.Frame.__init__(self, parent)
         label = ttk.Label(self, text="First Page", font=LARGE_FONT)
         label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
+        checkboxes = []
+        self.true_vals = []
+        self.true_vals.append(tk.IntVar())
+        self.true_vals.append(tk.IntVar())
+        self.true_vals.append(tk.IntVar())
+        self.true_vals.append(tk.IntVar())
+        self.true_vals.append(tk.IntVar())
+        self.true_vals.append(tk.IntVar())
 
-        buttons.append(ttk.Button(self, text="quit",
+        buttons.append(tk.Button(self, text="quit",
                                   command = lambda: controller.destroy() ))
-        buttons.append(ttk.Button(self, text="Select Directory",
+        buttons.append(tk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='yes')))
 #        buttons.append(ttk.Button(self, text="Select Image",
 #                                      command=lambda: self.select_image(controller, self.total_images)))
-        buttons.append(ttk.Button(self, text="Color Histogram",
+        buttons.append(tk.Button(self, text="Color Histogram",
                                   command = lambda: self.color_histogram(controller)))
-        buttons.append(ttk.Button(self, text="show folders",
-                                  command = lambda: self.hue_arr(controller)))
+        checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Kruskal Wallis', variable = self.true_vals[4]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Kolmogorov-Smirnov', variable = self.true_vals[5]))
+        for i, box in enumerate(checkboxes):
+            box.grid(row=1, column = i)
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
+
+    def run_analysis(self, content):
+        if self.true_vals[0]:
+            self.create_df(content)
+        if self.true_vals[1]:
+            self.create_histogram(content)
+        if self.true_vals[2]:
+            self.create_radarplot(content)
+        if self.true_vals[3]:
+            self.create_heatmap(content, func = chisquare)
+        if self.true_vals[4]:
+            self.create_heatmap(content, func =  kruskal)
+        if self.true_vals[5]:
+            self.create_heatmap(content, func =  kstest)
 
     def create_df(self, content, lab=False, channel=None):
         for folder_idx, folder in enumerate(content.images):
@@ -94,11 +123,11 @@ class StartPage(tk.Frame):
         content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
         print(content.hues)
 
-    def create_heatmap(self, content):
-        correlation = content.hues.corr(method=kstest)
+    def create_heatmap(self, content, func = None):
+        correlation = content.hues.corr(method=func)
         fig = plt.figure()
         ax = fig.add_subplot()
-        ax.set_title('KS-test')
+        #ax.set_title('KS-test')
         ax.set_xticks(ticks=np.arange(len(content.filenames)))
         ax.set_yticks(ticks=np.arange(len(content.filenames)))
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
@@ -107,7 +136,9 @@ class StartPage(tk.Frame):
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=1, column=0, pady = 20, padx=15)
+        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+                                                column = self.num_graphs % 3, pady=20, padx=15)
+        self.num_graphs+=1
 
 
     def create_radarplot(self, content):
@@ -124,14 +155,15 @@ class StartPage(tk.Frame):
             ax[i].scatter(np.interp(theta,(theta.min(), theta.max()),(0, 2*3.14)), r, c= colors, cmap='hsv')
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20, padx = 15)
-
-
+        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//2),
+                                                column = self.num_graphs % 2, pady=20, padx=15)
+        self.num_graphs+=1
     def create_histogram(self, content, lab=False, channel=1):
         folder1_idx = len(content.images[0])
         folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
-        #fig = plt.figure()
-        fig = plt.figure(figsize=(20,10))
+        fig = plt.figure()
+        #fig = plt.figure(figsize=(20,10))
+
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
         if lab==True:
@@ -184,7 +216,9 @@ class StartPage(tk.Frame):
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2, column=0, pady = 20, padx = 15)
+        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+                                                column = self.num_graphs % 3, pady=20, padx=15)
+        self.num_graphs+=1
 
 
 
@@ -202,8 +236,8 @@ class StartPage(tk.Frame):
 
     def select_directory(self, content, known='yes'):
         if known == 'yes':
-            folders = ['/home/claros/Dropbox/patternize/Blue'
-                       ,'/home/claros/Dropbox/patternize/Yellow']
+            folders = ['/home/claros/Dropbox/patternize/b'
+                       ,'/home/claros/Dropbox/patternize/y']
             for i, folder in enumerate(folders):
                 print('--------------------------------')
                 print('Loading Folder: {} done'.format(i))
@@ -225,17 +259,14 @@ class StartPage(tk.Frame):
                 print('loading: photo ({}/{})'.format(i+1, len(os.listdir())))
             self.total_images = 0
         if len(content.foldernames)==2:
-            self.create_df(content, lab=True, channel=1)
-            self.create_histogram(content, lab=True, channel=1)
-            #self.create_radarplot(content)
-            #self.create_heatmap(content)
+            self.run_analysis(content)
 
 def kruskal(a, b):
-    statistic, pval = stats.kruskal(a,b)
-    return pval
+        statistic, pval = stats.kruskal(a,b)
+        return pval
 
 def chisquare(a, b):
-    statistic, pval = stats.chisquare(a,b)
+    chisq , pval = stats.chisquare(a, f_exp= b)
     return pval
 def kstest(a, b):
     D, p = stats.kstest(a,b)
