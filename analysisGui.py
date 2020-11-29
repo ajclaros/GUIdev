@@ -1,6 +1,7 @@
 from collections import deque
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.widgets import RectangleSelector
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -16,9 +17,10 @@ from scipy import stats
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
+import selectinwindow
 LARGE_FONT= ("Verdana", 12)
-
-
+point_select = None
+bg=None
 class GuiApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
@@ -51,10 +53,8 @@ class GuiApp(tk.Tk):
 
 
 
-
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
-
         self.num_graphs = 0
         self.total_images = 0
         tk.Frame.__init__(self, parent)
@@ -74,10 +74,6 @@ class StartPage(tk.Frame):
                                   command = lambda: controller.destroy() ))
         buttons.append(tk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='yes')))
-#        buttons.append(ttk.Button(self, text="Select Image",
-#                                      command=lambda: self.select_image(controller, self.total_images)))
-        #buttons.append(tk.Button(self, text="Color Histogram",
-        #                          command = lambda: self.color_histogram(controller)))
         buttons.append(tk.Button(self, text='Color Range picker',
                                  command = lambda:self.color_picker(controller)))
         checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
@@ -93,9 +89,17 @@ class StartPage(tk.Frame):
 
     def color_picker(self, content):
         new_window = tk.Toplevel(content)
+        rect1 = selectinwindow.dragRect
+        buttons = []
         panels = []
-        fig = plt.figure()
-        ax1 = fig.add_axes()
+        entries = []
+        from_str = tk.IntVar()
+        to_str = tk.IntVar()
+        global point_select
+        fig = Figure(figsize=(5,2.3), dpi=300)
+        fig.subplots_adjust(top=0.7, bottom=0.4)
+        ax = fig.add_subplot(111)
+        selectinwindow.init(rect1, ax, 'image', 100,100)
 
         cm = plt.cm.hsv
         cmaplist = [cm(i) for i in range(cm.N)]
@@ -106,15 +110,31 @@ class StartPage(tk.Frame):
             'Custom cmap', cmaplist, cm.N)
         bounds = np.arange(content.nbins)
         norm = matplotlib.colors.BoundaryNorm(bounds, cm.N)
-        cb1 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cm, spacing='proportional',
+        cb1 = matplotlib.colorbar.ColorbarBase(ax, cmap=cm, spacing='proportional',
                                                ticks=np.arange(0,content.nbins,5),
                                                boundaries= bounds, format='%1i', norm=norm,
                                                orientation='horizontal')
-
-        panels.append(FigureCanvasTkAgg(fig, self))
+        cb1.ax.set_xticklabels(labels=[str(i) for i in np.arange(0, content.nbins, 5)], fontsize=5, rotation=-70)
+        panels.append(FigureCanvasTkAgg(fig, new_window))
+        toggle_selector.RS = RS(ax, line_select_callback, drawtype='box', useblit=True,
+                                               button=[1, 3],
+                                               minspanx=5, minspany=5,
+                                               spancoords='pixels',
+                                               interactive=True)
+        fig.canvas.mpl_connect('key_press_event', toggle_selector)
         panels[-1].draw()
-        panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
-                                                column = self.num_graphs % 3, pady=20, padx=15)
+        panels[-1].get_tk_widget().grid(row=2,column=0, columnspan=10)
+        buttons.append(tk.Button(new_window, text="quit",
+                                  command = lambda: new_window.destroy() ))
+        entries.append(tk.Label(new_window, text='From: '))
+        entries.append(tk.Entry(new_window, textvariable = from_str))
+        entries.append(tk.Label(new_window, text = 'To: '))
+        entries.append(tk.Entry(new_window, textvariable = to_str))
+        for i, elt in enumerate(entries):
+            elt.grid(row=1, column=i)
+        for i, button in enumerate(buttons):
+            button.grid(row=0, column=i)
+
     def run_analysis(self, content):
         if self.true_vals[0]:
             self.create_df(content)
@@ -242,7 +262,7 @@ class StartPage(tk.Frame):
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3)
                                                 column = self.num_graphs % 3, pady=20, padx=15)
         self.num_graphs+=1
 
@@ -294,9 +314,43 @@ def kruskal(a, b):
 def chisquare(a, b):
     chisq , pval = stats.chisquare(a, f_exp= b)
     return pval
+
 def kstest(a, b):
     D, p = stats.kstest(a,b)
     return p
 
+def line_select_callback(eclick, erelease):
+    """
+    Callback for line selection.
+
+    *eclick* and *erelease* are the press and release events.
+    """
+    x1, y1 = eclick.xdata, eclick.ydata
+    x2, y2 = erelease.xdata, erelease.ydata
+    print(f"({x1:3.2f}, {y1:3.2f}) --> ({x2:3.2f}, {y2:3.2f})")
+    print(f" The buttons you used were: {eclick.button} {erelease.button}")
+
+
+def toggle_selector(event):
+    if event.key == 't':
+        if toggle_selector.RS.active:
+            print(' RectangleSelector deactivated.')
+            toggle_selector.RS.set_active(False)
+        else:
+            print(' RectangleSelector activated.')
+            toggle_selector.RS.set_active(True)
+class RS(RectangleSelector):
+    def __init__(self, ax, onselect, drawtype='box',
+                 minspanx=0, minspany=0, useblit=False,
+                 lineprops=None, button=None, spancoords='data', maxdist=10,
+                 marker_props=None,
+                 interactive=False,
+                 state_modifier_keys =None):
+        super().__init__(ax, onselect, drawtype=drawtype, minspanx=0, minspany=minspany, useblit=useblit, lineprops=lineprops, button=button, spancoords=spancoords,
+                         maxdist=maxdist, marker_props=marker_props, interactive=interactive, state_modifier_keys=state_modifier_keys)
+        self.extents = (10, 20, 10, 20)
+
+
+    
 app = GuiApp()
 app.mainloop()
