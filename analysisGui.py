@@ -76,8 +76,10 @@ class StartPage(tk.Frame):
                                       command=lambda: self.select_directory(controller, known='yes')))
 #        buttons.append(ttk.Button(self, text="Select Image",
 #                                      command=lambda: self.select_image(controller, self.total_images)))
-        buttons.append(tk.Button(self, text="Color Histogram",
-                                  command = lambda: self.color_histogram(controller)))
+        #buttons.append(tk.Button(self, text="Color Histogram",
+        #                          command = lambda: self.color_histogram(controller)))
+        buttons.append(tk.Button(self, text='Color Range picker',
+                                 command = lambda:self.color_picker(controller)))
         checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
@@ -89,6 +91,30 @@ class StartPage(tk.Frame):
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
 
+    def color_picker(self, content):
+        new_window = tk.Toplevel(content)
+        panels = []
+        fig = plt.figure()
+        ax1 = fig.add_axes()
+
+        cm = plt.cm.hsv
+        cmaplist = [cm(i) for i in range(cm.N)]
+        cmaplist = deque(cmaplist)
+        cmaplist.rotate(30)
+        cmaplist.reverse()
+        cm = matplotlib.colors.LinearSegmentedColormap.from_list(
+            'Custom cmap', cmaplist, cm.N)
+        bounds = np.arange(content.nbins)
+        norm = matplotlib.colors.BoundaryNorm(bounds, cm.N)
+        cb1 = matplotlib.colorbar.ColorbarBase(ax1, cmap=cm, spacing='proportional',
+                                               ticks=np.arange(0,content.nbins,5),
+                                               boundaries= bounds, format='%1i', norm=norm,
+                                               orientation='horizontal')
+
+        panels.append(FigureCanvasTkAgg(fig, self))
+        panels[-1].draw()
+        panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+                                                column = self.num_graphs % 3, pady=20, padx=15)
     def run_analysis(self, content):
         if self.true_vals[0]:
             self.create_df(content)
