@@ -17,9 +17,9 @@ from scipy import stats
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
-import selectinwindow
 LARGE_FONT= ("Verdana", 12)
 point_select = None
+times = 0
 bg=None
 class GuiApp(tk.Tk):
 
@@ -87,25 +87,27 @@ class StartPage(tk.Frame):
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
 
-    def color_picker(self, content):
+    def color_picker(self, content, repeat=0):
+        global times, point_select
+        times = repeat
         new_window = tk.Toplevel(content)
-        rect1 = selectinwindow.dragRect
         buttons = []
         panels = []
         entries = []
         from_str = tk.IntVar()
         to_str = tk.IntVar()
-        global point_select
         fig = Figure(figsize=(5,2.3), dpi=300)
         fig.subplots_adjust(top=0.7, bottom=0.4)
         ax = fig.add_subplot(111)
-        selectinwindow.init(rect1, ax, 'image', 100,100)
-
         cm = plt.cm.hsv
         cmaplist = [cm(i) for i in range(cm.N)]
         cmaplist = deque(cmaplist)
-        cmaplist.rotate(30)
-        cmaplist.reverse()
+        gradient_ticks=np.arange(0, content.nbins, 5)
+        gradient_ticks=deque(gradient_ticks)
+        for i in range(times):
+            cmaplist.rotate(30)
+            gradient_ticks.rotate(6)
+
         cm = matplotlib.colors.LinearSegmentedColormap.from_list(
             'Custom cmap', cmaplist, cm.N)
         bounds = np.arange(content.nbins)
@@ -114,9 +116,9 @@ class StartPage(tk.Frame):
                                                ticks=np.arange(0,content.nbins,5),
                                                boundaries= bounds, format='%1i', norm=norm,
                                                orientation='horizontal')
-        cb1.ax.set_xticklabels(labels=[str(i) for i in np.arange(0, content.nbins, 5)], fontsize=5, rotation=-70)
+        cb1.ax.set_xticklabels(labels=[str(i) for i in gradient_ticks], fontsize=5, rotation=-70)
         panels.append(FigureCanvasTkAgg(fig, new_window))
-        toggle_selector.RS = RS(ax, line_select_callback, drawtype='box', useblit=True,
+        toggle_selector.RS = RectangleSelector(ax, line_select_callback, drawtype='box', useblit=True,
                                                button=[1, 3],
                                                minspanx=5, minspany=5,
                                                spancoords='pixels',
@@ -126,10 +128,15 @@ class StartPage(tk.Frame):
         panels[-1].get_tk_widget().grid(row=2,column=0, columnspan=10)
         buttons.append(tk.Button(new_window, text="quit",
                                   command = lambda: new_window.destroy() ))
+        buttons.append(tk.Button(new_window, text='Rotate',
+                                 command = lambda:[self.color_picker(content, repeat=times+1), new_window.destroy()] ))
+
         entries.append(tk.Label(new_window, text='From: '))
         entries.append(tk.Entry(new_window, textvariable = from_str))
         entries.append(tk.Label(new_window, text = 'To: '))
         entries.append(tk.Entry(new_window, textvariable = to_str))
+        entries.append(tk.Button(new_window, text='use points',
+                                 command = lambda: set_points(from_str.get(), to_str.get(), fig, ax, toggle_selector.RS, times)))
         for i, elt in enumerate(entries):
             elt.grid(row=1, column=i)
         for i, button in enumerate(buttons):
@@ -262,7 +269,7 @@ class StartPage(tk.Frame):
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3)
+        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
                                                 column = self.num_graphs % 3, pady=20, padx=15)
         self.num_graphs+=1
 
@@ -327,9 +334,10 @@ def line_select_callback(eclick, erelease):
     """
     x1, y1 = eclick.xdata, eclick.ydata
     x2, y2 = erelease.xdata, erelease.ydata
-    print(f"({x1:3.2f}, {y1:3.2f}) --> ({x2:3.2f}, {y2:3.2f})")
-    print(f" The buttons you used were: {eclick.button} {erelease.button}")
-
+    global point_select, times
+    toggle_selector.RS.extents = x1, x2, 0, 250
+    point_select=(np.ceil(x1-times*30)%255, np.ceil(x2-times*30)%255)
+    print('from:{}, to:{}'.format(point_select[0],point_select[1]))
 
 def toggle_selector(event):
     if event.key == 't':
@@ -339,18 +347,26 @@ def toggle_selector(event):
         else:
             print(' RectangleSelector activated.')
             toggle_selector.RS.set_active(True)
-class RS(RectangleSelector):
-    def __init__(self, ax, onselect, drawtype='box',
-                 minspanx=0, minspany=0, useblit=False,
-                 lineprops=None, button=None, spancoords='data', maxdist=10,
-                 marker_props=None,
-                 interactive=False,
-                 state_modifier_keys =None):
-        super().__init__(ax, onselect, drawtype=drawtype, minspanx=0, minspany=minspany, useblit=useblit, lineprops=lineprops, button=button, spancoords=spancoords,
-                         maxdist=maxdist, marker_props=marker_props, interactive=interactive, state_modifier_keys=state_modifier_keys)
-        self.extents = (10, 20, 10, 20)
+
+def set_points(from_x, to_x, fig, ax, RS, times):
+    global point_select
+
+    temp =(np.ceil(from_x+times*30)%255, np.ceil(to_x+times*30)%255, 0, 255)
+    if temp[0]>temp[1]:
+        RS.extents = 0, temp[1], 0,255
+        RS2 = RectangleSelector(ax, line_select_callback, drawtype='box', useblit=True,
+                                               button=[1, 3],
+                                               minspanx=5, minspany=5,
+                                               spancoords='pixels',
+                                               interactive=True)
+        RS2.extents = from_x, 255, 0, 255
+    else:
+        RS.extents = temp[0], temp[1], 0, 255
+
+    point_select = (from_x, to_x)
+    print('from:{}, to:{}'.format(point_select[0],point_select[1]))
 
 
-    
+
 app = GuiApp()
 app.mainloop()
