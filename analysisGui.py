@@ -94,8 +94,8 @@ class StartPage(tk.Frame):
         buttons = []
         panels = []
         entries = []
-        from_str = tk.IntVar()
-        to_str = tk.IntVar()
+        from_int = tk.IntVar()
+        to_int = tk.IntVar()
         fig = Figure(figsize=(5,2.3), dpi=300)
         fig.subplots_adjust(top=0.7, bottom=0.4)
         ax = fig.add_subplot(111)
@@ -132,11 +132,11 @@ class StartPage(tk.Frame):
                                  command = lambda:[self.color_picker(content, repeat=times+1), new_window.destroy()] ))
 
         entries.append(tk.Label(new_window, text='From: '))
-        entries.append(tk.Entry(new_window, textvariable = from_str))
+        entries.append(tk.Entry(new_window, textvariable = from_int))
         entries.append(tk.Label(new_window, text = 'To: '))
-        entries.append(tk.Entry(new_window, textvariable = to_str))
+        entries.append(tk.Entry(new_window, textvariable = to_int))
         entries.append(tk.Button(new_window, text='use points',
-                                 command = lambda: set_points(from_str.get(), to_str.get(), fig, ax, toggle_selector.RS, times)))
+                                 command = lambda: set_points(from_int.get(), to_int.get(), fig, ax, toggle_selector.RS, times)))
         for i, elt in enumerate(entries):
             elt.grid(row=1, column=i)
         for i, button in enumerate(buttons):
