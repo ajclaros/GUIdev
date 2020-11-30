@@ -130,6 +130,8 @@ class StartPage(tk.Frame):
                                   command = lambda: new_window.destroy() ))
         buttons.append(tk.Button(new_window, text='Rotate',
                                  command = lambda:[self.color_picker(content, repeat=times+1), new_window.destroy()] ))
+        buttons.append(tk.Button(new_window, text='Invert',
+                                 command = lambda: set_points(point_select[1], point_select[0], fig, ax, toggle_selector.RS, times)))
 
         entries.append(tk.Label(new_window, text='From: '))
         entries.append(tk.Entry(new_window, textvariable = from_int))
