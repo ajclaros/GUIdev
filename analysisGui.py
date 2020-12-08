@@ -43,7 +43,7 @@ class GuiApp(tk.Tk):
 
             frame = F(container, self)
             self.frames[F] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
+            frame.grid(row=0, column=0, sticky="new")
 
         self.show_frame(self.pages[0])
 
@@ -58,8 +58,6 @@ class StartPage(tk.Frame):
         self.num_graphs = 0
         self.total_images = 0
         tk.Frame.__init__(self, parent)
-        label = ttk.Label(self, text="First Page", font=LARGE_FONT)
-        label.grid(row=0, column=0, pady=10, padx=10)
         buttons = []
         checkboxes = []
         self.true_vals = []
@@ -145,18 +143,18 @@ class StartPage(tk.Frame):
             button.grid(row=0, column=i)
 
     def run_analysis(self, content):
-        if self.true_vals[0]:
+        if self.true_vals[0].get()==True:
             self.create_df(content)
-        if self.true_vals[1]:
+        if self.true_vals[1].get()==True:
             self.create_histogram(content)
-        if self.true_vals[2]:
+        if self.true_vals[2].get()==True:
             self.create_radarplot(content)
-        if self.true_vals[3]:
-            self.create_heatmap(content, func = chisquare)
-        if self.true_vals[4]:
-            self.create_heatmap(content, func =  kruskal)
-        if self.true_vals[5]:
-            self.create_heatmap(content, func =  kstest)
+        if self.true_vals[3].get()==True:
+            self.create_heatmap(content, func = 'Chi-squared')
+        if self.true_vals[4].get()==True:
+            self.create_heatmap(content, func =  'Kruskal-Wallis')
+        if self.true_vals[5].get()==True:
+            self.create_heatmap(content, func =  'Kolmorogov-Smirnov')
 
     def create_df(self, content, lab=False, channel=None):
         for folder_idx, folder in enumerate(content.images):
@@ -179,7 +177,8 @@ class StartPage(tk.Frame):
         print(content.hues)
 
     def create_heatmap(self, content, func = None):
-        correlation = content.hues.corr(method=func)
+        dispatcher = {'Kruskal-Wallis':kruskal, 'Chi-squared':chisquare, 'Kolmorogov-Smirnov':kstest}
+        correlation = content.hues.corr(method=dispatcher[func])
         fig = plt.figure()
         ax = fig.add_subplot()
         #ax.set_title('KS-test')
@@ -187,6 +186,7 @@ class StartPage(tk.Frame):
         ax.set_yticks(ticks=np.arange(len(content.filenames)))
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
         ax.set_yticklabels(labels = content.filenames, fontdict = {'fontsize':4})
+        ax.set_title(func)
         hm = ax.imshow(correlation, cmap='Set1',interpolation = 'nearest')
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
