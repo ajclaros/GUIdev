@@ -7,3 +7,13 @@ Two visualizations are: Heatmap of a Kruskall Wallice test comparing individual 
 ![](first_photo.png)
 ![](cielab_000.png)
 
+
+Added color range selection
+Select by:
+- Direct values
+- Dragging window
+- Inverting selection
+- Rotating color bar to center specified region
+![](colorselection.gif)
+
+
