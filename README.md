@@ -5,6 +5,9 @@
 Processes folders of photos and creates a dataframe for analysis. Current implementation works with hue, but switching to any other value is not difficult
 Objects must be segmented on a white background using Segmenting tool described in (link to segmentation tool)
 Select a channel from a color space and run analysis (example is of hue)
+
+Included options to export data and graphs of specified dimensions
+
 Analysis includes:
 - Histogram
 - Radar Plot
