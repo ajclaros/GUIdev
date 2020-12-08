@@ -1,9 +1,17 @@
 # Gui for Quantification of color
-> In early stages, visualizations are from test data and not representative of a final visualization. The main useful file is colorRange.py where all other files are test functions
+> In early stages. The main useful file is analysisGui.py where all other files are test functions
+> Current tests included Chi-Squared, Kruskal-Wallis, Kolmorogov-Smirnov (see function definitions of kruskal, chisquared, kstest for how to implement custom statistical tests)
 
 Processes folders of photos and creates a dataframe for analysis. Current implementation works with hue, but switching to any other value is not difficult
-Two visualizations are: Heatmap of a Kruskall Wallice test comparing individual photos and a histogram of binned hues by folder.
+Objects must be segmented on a white background using Segmenting tool described in (link to segmentation tool)
+Select a channel from a color space and run analysis (example is of hue)
+Analysis includes:
+- Histogram
+- Radar Plot
+- Heatmap comparing statistics/p-values of a given test
 ![](screenshot.png)
+
+Histogram of CIE L\*a\*b channel 2
 ![](cielab_000.png)
 
 
