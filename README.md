@@ -1,6 +1,6 @@
 # Gui for Quantification of color
-> In early stages. The main useful file is analysisGui.py where all other files are test functions
-> Current tests included Chi-Squared, Kruskal-Wallis, Kolmorogov-Smirnov (see function definitions of kruskal, chisquared, kstest for how to implement custom statistical tests)
+> - In early stages. The main useful file is analysisGui.py where all other files are test functions
+> - Current tests included Chi-Squared, Kruskal-Wallis, Kolmorogov-Smirnov (see function definitions of kruskal, chisquared, kstest for how to implement custom statistical tests)
 
 Processes folders of photos and creates a dataframe for analysis. Current implementation works with hue, but switching to any other value is not difficult
 Objects must be segmented on a white background using Segmenting tool described in (link to segmentation tool)
