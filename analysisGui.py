@@ -26,12 +26,13 @@ class GuiApp(tk.Tk):
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
-        self.nbins = 255
+        self.nbins = 40
         self.panels = []
         self.images = []
         self.filenames = []
         self.foldernames = []
-        self.hues = []
+        self.percents = []
+        self.values = []
         container = tk.Frame(self)
         container.grid(row=0, column=0)
         container.grid_rowconfigure(0, weight=1)
@@ -77,10 +78,9 @@ class StartPage(tk.Frame):
         checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
+        checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kruskal Wallis', variable = self.true_vals[4]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kolmogorov-Smirnov', variable = self.true_vals[5]))
-        #No Chi-squared, divide by 0 error, needs fixing
-        #checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         for i, box in enumerate(checkboxes):
             box.grid(row=1, column = i)
         for i, button in enumerate(buttons):
@@ -151,14 +151,15 @@ class StartPage(tk.Frame):
         if self.true_vals[2].get()==True:
             self.create_radarplot(content)
         if self.true_vals[3].get()==True:
-            self.create_heatmap(content, func =  'Kruskal-Wallis')
+            self.create_heatmap(content, func = 'Chi-squared')
         if self.true_vals[4].get()==True:
+            self.create_heatmap(content, func =  'Kruskal-Wallis')
+        if self.true_vals[5].get()==True:
             self.create_heatmap(content, func =  'Kolmorogov-Smirnov')
-#        Chi-sqr returns nan array
-#        if self.true_vals[5].get()==True:
-#            self.create_heatmap(content, func = 'Chi-squared')
 
     def create_df(self, content, lab=False, channel=None):
+        percents = []
+        values = []
         for folder_idx, folder in enumerate(content.images):
             for j, image in enumerate(folder):
                 #bw = color.rgb2gray(image)
@@ -171,16 +172,22 @@ class StartPage(tk.Frame):
                     image = np.float32(image)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                     data = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
-                content.hues.append(np.histogram(
+                percents.append(np.histogram(
                    data, bins=content.nbins, density=True)[0])
+                values.append(np.histogram(
+                   data, bins=content.nbins, density=False)[0])
                 print('folder: {}, photo:({}/{})'.format(folder_idx, j+1, len(folder)))
 
-        content.hues= pd.DataFrame(content.hues, index=content.filenames).T #This is what creates the final dataframe of hues to work with
-        print(content.hues)
+        content.percents= pd.DataFrame(percents, index=content.filenames).T #This is what creates the final dataframe of hues to work with
+        content.values = pd.DataFrame(values, index=content.filenames).T
+        print(content.values)
 
     def create_heatmap(self, content, func = None):
         dispatcher = {'Kruskal-Wallis':kruskal, 'Chi-squared':chisquare, 'Kolmorogov-Smirnov':kstest}
-        correlation = content.hues.corr(method=dispatcher[func])
+        if func == 'Chi-squared':
+            correlation = content.values.corr(method=dispatcher[func])
+        else:
+            correlation = content.percents.corr(method=dispatcher[func])
         fig = plt.figure()
         ax = fig.add_subplot()
         #ax.set_title('KS-test')
@@ -200,7 +207,7 @@ class StartPage(tk.Frame):
 
     def create_radarplot(self, content):
         folder1_idx = len(content.images[0])
-        folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
+        folders = [content.percents.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
         fig, ax = plt.subplots(1, 2, subplot_kw=dict(polar=True))
         cm = plt.cm.hsv
         for i, folder in enumerate(folders):
@@ -217,7 +224,7 @@ class StartPage(tk.Frame):
         self.num_graphs+=1
     def create_histogram(self, content, lab=False, channel=1):
         folder1_idx = len(content.images[0])
-        folders = [content.hues.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
+        folders = [content.percents.T.iloc[:folder1_idx], content.percents.T.iloc[folder1_idx:]]
         fig = plt.figure()
         #fig = plt.figure(figsize=(20,10))
 
@@ -237,7 +244,6 @@ class StartPage(tk.Frame):
 
             indices = np.where(foldersum>0.005)
             indices = indices[0]
-            print(indices)
         cmaplist = [cm(i) for i in range(cm.N)]
         cmaplist = deque(cmaplist)
         if lab==False:
@@ -267,8 +273,8 @@ class StartPage(tk.Frame):
             ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
-        ax.set_xlim(indices[0],indices[-1])
-        ax1.set_xlim(indices[0], indices[-1])
+        #ax.set_xlim(indices[0],indices[-1])
+        #ax1.set_xlim(indices[0], indices[-1])
         #plt.tight_layout()
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
@@ -325,7 +331,7 @@ def kruskal(a, b):
 def chisquare(a, b):
     a= a*1e5
     b= b*1e5
-    chisq , pval = stats.chisquare(f_obs=a, f_exp= b)
+    chisq , pval = stats.chisquare(f_obs=a.flatten(), f_exp= b.flatten())
     return pval
 
 def kstest(a, b):
