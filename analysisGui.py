@@ -77,9 +77,10 @@ class StartPage(tk.Frame):
         checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
-        checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kruskal Wallis', variable = self.true_vals[4]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kolmogorov-Smirnov', variable = self.true_vals[5]))
+        #No Chi-squared, divide by 0 error, needs fixing
+        #checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         for i, box in enumerate(checkboxes):
             box.grid(row=1, column = i)
         for i, button in enumerate(buttons):
@@ -150,11 +151,12 @@ class StartPage(tk.Frame):
         if self.true_vals[2].get()==True:
             self.create_radarplot(content)
         if self.true_vals[3].get()==True:
-            self.create_heatmap(content, func = 'Chi-squared')
-        if self.true_vals[4].get()==True:
             self.create_heatmap(content, func =  'Kruskal-Wallis')
-        if self.true_vals[5].get()==True:
+        if self.true_vals[4].get()==True:
             self.create_heatmap(content, func =  'Kolmorogov-Smirnov')
+#        Chi-sqr returns nan array
+#        if self.true_vals[5].get()==True:
+#            self.create_heatmap(content, func = 'Chi-squared')
 
     def create_df(self, content, lab=False, channel=None):
         for folder_idx, folder in enumerate(content.images):
@@ -321,7 +323,9 @@ def kruskal(a, b):
         return pval
 
 def chisquare(a, b):
-    chisq , pval = stats.chisquare(a, f_exp= b)
+    a= a*1e5
+    b= b*1e5
+    chisq , pval = stats.chisquare(f_obs=a, f_exp= b)
     return pval
 
 def kstest(a, b):
