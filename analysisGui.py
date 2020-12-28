@@ -26,7 +26,7 @@ class GuiApp(tk.Tk):
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
-        self.nbins = 40
+        self.nbins = 100
         self.panels = []
         self.images = []
         self.filenames = []
@@ -196,7 +196,10 @@ class StartPage(tk.Frame):
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
         ax.set_yticklabels(labels = content.filenames, fontdict = {'fontsize':4})
         ax.set_title(func)
-        hm = ax.imshow(correlation, cmap='Set1',interpolation = 'nearest')
+        if func == 'Chi-squared':
+            hm = ax.imshow(correlation, cmap='cool')
+        else:
+            hm = ax.imshow(correlation, cmap='Set1',interpolation = 'nearest')
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
