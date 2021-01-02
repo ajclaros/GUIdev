@@ -26,13 +26,15 @@ class GuiApp(tk.Tk):
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
-        self.nbins = 100
+        self.nbins = 255
         self.panels = []
         self.images = []
         self.filenames = []
         self.foldernames = []
         self.percents = []
         self.values = []
+        self.colorspace = None
+        self.channel = None
         container = tk.Frame(self)
         container.grid(row=0, column=0)
         container.grid_rowconfigure(0, weight=1)
@@ -68,23 +70,47 @@ class StartPage(tk.Frame):
         self.true_vals.append(tk.IntVar())
         self.true_vals.append(tk.IntVar())
         self.true_vals.append(tk.IntVar())
-
-        buttons.append(tk.Button(self, text="quit",
+        colorspace = []
+        self.choice = tk.IntVar()
+        colorspace.append(tk.Radiobutton(self, text = "H", variable = self.choice, value = 0))
+        colorspace.append(tk.Radiobutton(self, text = "S", variable = self.choice, value = 1))
+        colorspace.append(tk.Radiobutton(self, text = "V", variable = self.choice, value = 2))
+        colorspace.append(tk.Radiobutton(self, text = "L*", variable = self.choice, value = 3))
+        colorspace.append(tk.Radiobutton(self, text = "A*", variable = self.choice, value = 4))
+        colorspace.append(tk.Radiobutton(self, text = "B*", variable = self.choice, value = 5))
+        colorspace.append(tk.Radiobutton(self, text = "B", variable = self.choice, value = 6))
+        colorspace.append(tk.Radiobutton(self, text = "G", variable = self.choice, value = 7))
+        colorspace.append(tk.Radiobutton(self, text = "R", variable = self.choice, value = 8))
+        buttons.append(tk.Button(self, text="Quit",
                                   command = lambda: controller.destroy() ))
         buttons.append(tk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='yes')))
         buttons.append(tk.Button(self, text='Color Range picker',
                                  command = lambda:self.color_picker(controller)))
-        checkboxes.append(ttk.Checkbutton(self, text= 'H',  variable =self.true_vals[0]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
+
+
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kruskal Wallis', variable = self.true_vals[4]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kolmogorov-Smirnov', variable = self.true_vals[5]))
+        for i, choice in enumerate(colorspace):
+            choice.grid(row =2 +i//3, column= i%3)
+
         for i, box in enumerate(checkboxes):
             box.grid(row=1, column = i)
         for i, button in enumerate(buttons):
             button.grid(row=0, column=i)
+    def getSelected(self):
+        choice = self.choice.get()
+        if choice//3 == 0:
+            return ['HSV', choice%3]
+        elif choice//3==1:
+            return ["CIE L*A*B*", choice%3]
+        else:
+            return ['RGB', choice%3]
+
+
 
     def color_picker(self, content, repeat=0):
         global times, point_select
@@ -144,8 +170,12 @@ class StartPage(tk.Frame):
             button.grid(row=0, column=i)
 
     def run_analysis(self, content):
-        if self.true_vals[0].get()==True:
-            self.create_df(content)
+        space, channel  = self.getSelected()
+        dispatcher = {"HSV":['H','S','V'], "CIE L*A*B*":['L*','A*','B*'],'RGB':['B','G','R']}
+        content.colorspace = space
+        content.channel = dispatcher[space][channel]
+        print('{}: {}'.format(content.colorspace, content.channel))
+        self.create_df(content, space=space, channel=channel)
         if self.true_vals[1].get()==True:
             self.create_histogram(content)
         if self.true_vals[2].get()==True:
@@ -157,7 +187,7 @@ class StartPage(tk.Frame):
         if self.true_vals[5].get()==True:
             self.create_heatmap(content, func =  'Kolmorogov-Smirnov')
 
-    def create_df(self, content, lab=False, channel=None):
+    def create_df(self, content, space=None, channel=None):
         percents = []
         values = []
         for folder_idx, folder in enumerate(content.images):
@@ -165,13 +195,15 @@ class StartPage(tk.Frame):
                 #bw = color.rgb2gray(image)
                 #image = color.rgb2hsv(image)
                 bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                if lab == True:
+                if space == 'LAB':
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
                     data = image[np.where(bw<255)].T[channel] #lum=0, A=1, B = 2
+                elif space == 'RGB':
+                    data = image[np.where(bw<255)].T[channel] # B=0, G=1, R=2
                 else:
                     image = np.float32(image)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                    data = image[np.where(bw<255)].T[0] #hue=0, sat=1, val = 2
+                    data = image[np.where(bw<255)].T[channel] #hue=0, sat=1, val = 2
                 percents.append(np.histogram(
                    data, bins=content.nbins, density=True)[0])
                 values.append(np.histogram(
@@ -180,7 +212,7 @@ class StartPage(tk.Frame):
 
         content.percents= pd.DataFrame(percents, index=content.filenames).T #This is what creates the final dataframe of hues to work with
         content.values = pd.DataFrame(values, index=content.filenames).T
-        print(content.values)
+        #print(content.values)
 
     def create_heatmap(self, content, func = None):
         dispatcher = {'Kruskal-Wallis':kruskal, 'Chi-squared':chisquare, 'Kolmorogov-Smirnov':kstest}
@@ -195,7 +227,7 @@ class StartPage(tk.Frame):
         ax.set_yticks(ticks=np.arange(len(content.filenames)))
         ax.set_xticklabels(labels=content.filenames, rotation=90, fontdict={'fontsize':4})
         ax.set_yticklabels(labels = content.filenames, fontdict = {'fontsize':4})
-        ax.set_title(func)
+        ax.set_title("{}: {}, channel:{}".format(func, content.colorspace, content.channel))
         if func == 'Chi-squared':
             hm = ax.imshow(correlation, cmap='cool')
         else:
@@ -203,14 +235,14 @@ class StartPage(tk.Frame):
         plt.colorbar(hm)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+        content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//3),
                                                 column = self.num_graphs % 3, pady=20, padx=15)
         self.num_graphs+=1
 
 
     def create_radarplot(self, content):
         folder1_idx = len(content.images[0])
-        folders = [content.percents.T.iloc[:folder1_idx], content.hues.T.iloc[folder1_idx:]]
+        folders = [content.percents.T.iloc[:folder1_idx], content.percents.T.iloc[folder1_idx:]]
         fig, ax = plt.subplots(1, 2, subplot_kw=dict(polar=True))
         cm = plt.cm.hsv
         for i, folder in enumerate(folders):
@@ -220,9 +252,10 @@ class StartPage(tk.Frame):
             r = folder.mean().values
             colors = theta
             ax[i].scatter(np.interp(theta,(theta.min(), theta.max()),(0, 2*3.14)), r, c= colors, cmap='hsv')
+        fig.suptitle("Radarplots of {}:{}, folder 1 and 2".format(content.colorspace, content.channel))
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//2),
+        content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//2),
                                                 column = self.num_graphs % 2, pady=20, padx=15)
         self.num_graphs+=1
     def create_histogram(self, content, lab=False, channel=1):
@@ -276,13 +309,14 @@ class StartPage(tk.Frame):
             ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
             ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
         ax.legend()
+        ax.set_title("{}, channel:{}".format(content.colorspace, content.channel))
         #ax.set_xlim(indices[0],indices[-1])
         #ax1.set_xlim(indices[0], indices[-1])
         #plt.tight_layout()
 #       ax.set_ylim(0, 0.0002)
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
-        content.panels[-1].get_tk_widget().grid(row=2 + (self.num_graphs//3),
+        content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//3),
                                                 column = self.num_graphs % 3, pady=20, padx=15)
         self.num_graphs+=1
 
