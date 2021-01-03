@@ -35,6 +35,7 @@ class GuiApp(tk.Tk):
         self.values = []
         self.colorspace = None
         self.channel = None
+        self.bin_range = False
         container = tk.Frame(self)
         container.grid(row=0, column=0)
         container.grid_rowconfigure(0, weight=1)
@@ -72,6 +73,8 @@ class StartPage(tk.Frame):
         self.true_vals.append(tk.IntVar())
         colorspace = []
         self.choice = tk.IntVar()
+        nbins = tk.StringVar()
+        nbins.set(controller.nbins)
         colorspace.append(tk.Radiobutton(self, text = "H", variable = self.choice, value = 0))
         colorspace.append(tk.Radiobutton(self, text = "S", variable = self.choice, value = 1))
         colorspace.append(tk.Radiobutton(self, text = "V", variable = self.choice, value = 2))
@@ -87,9 +90,14 @@ class StartPage(tk.Frame):
                                       command=lambda: self.select_directory(controller, known='yes')))
         buttons.append(tk.Button(self, text='Color Range picker',
                                  command = lambda:self.color_picker(controller)))
+        buttons.append(tk.Label(self, text='Num Bins: '))
+        buttons.append(tk.Entry(self, textvariable=nbins))
+        buttons.append(tk.Button(self, text='Set', command = lambda:[setattr(controller, 'nbins', nbins.get()), print('Set nbins to {}'.format(controller.nbins))]))
+        #develop exporting function
+        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir(".."),os.mkdir('exports'), os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts'),[x.savefig('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
+
+
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
-
-
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Chi-squared', variable = self.true_vals[3]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Kruskal Wallis', variable = self.true_vals[4]))
@@ -112,7 +120,7 @@ class StartPage(tk.Frame):
 
 
 
-    def color_picker(self, content, repeat=0):
+    def color_picker(self, content, repeat=0, points=None):
         global times, point_select
         times = repeat
         new_window = tk.Toplevel(content)
@@ -121,6 +129,9 @@ class StartPage(tk.Frame):
         entries = []
         from_int = tk.IntVar()
         to_int = tk.IntVar()
+        if points is not None:
+            from_int.set(points[0])
+            to_int.set(points[1])
         fig = Figure(figsize=(5,2.3), dpi=300)
         fig.subplots_adjust(top=0.7, bottom=0.4)
         ax = fig.add_subplot(111)
@@ -154,9 +165,11 @@ class StartPage(tk.Frame):
         buttons.append(tk.Button(new_window, text="quit",
                                   command = lambda: new_window.destroy() ))
         buttons.append(tk.Button(new_window, text='Rotate',
-                                 command = lambda:[self.color_picker(content, repeat=times+1), new_window.destroy()] ))
+                                 command = lambda:[self.color_picker(content, repeat=times+1), new_window.destroy()]))
         buttons.append(tk.Button(new_window, text='Invert',
-                                 command = lambda: set_points(point_select[1], point_select[0], fig, ax, toggle_selector.RS, times)))
+                                 command = lambda: [self.color_picker(content, repeat = repeat, points = [point_select[1], point_select[0]]), new_window.destroy(), set_points(point_select[1], point_select[0], fig, ax, toggle_selector.RS, times)]))
+        buttons.append(tk.Button(new_window, text='Set Points', command = lambda:[self.color_picker(content, repeat=repeat, points = point_select), new_window.destroy()]))
+        buttons.append(tk.Button(new_window, text='OK', command = lambda:[setattr(content, 'bin_range', True), new_window.destroy(), print('Bin_range={}'.format(content.bin_range))]))
 
         entries.append(tk.Label(new_window, text='From: '))
         entries.append(tk.Entry(new_window, textvariable = from_int))
@@ -175,9 +188,9 @@ class StartPage(tk.Frame):
         content.colorspace = space
         content.channel = dispatcher[space][channel]
         print('{}: {}'.format(content.colorspace, content.channel))
-        self.create_df(content, space=space, channel=channel)
+        self.create_df(content, space=space, channel=channel )
         if self.true_vals[1].get()==True:
-            self.create_histogram(content)
+            self.create_histogram(content, space=space, channel=channel)
         if self.true_vals[2].get()==True:
             self.create_radarplot(content)
         if self.true_vals[3].get()==True:
@@ -188,6 +201,7 @@ class StartPage(tk.Frame):
             self.create_heatmap(content, func =  'Kolmorogov-Smirnov')
 
     def create_df(self, content, space=None, channel=None):
+        global point_select
         percents = []
         values = []
         for folder_idx, folder in enumerate(content.images):
@@ -204,8 +218,16 @@ class StartPage(tk.Frame):
                     image = np.float32(image)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                     data = image[np.where(bw<255)].T[channel] #hue=0, sat=1, val = 2
+
+                if content.bin_range==True:
+                    if point_select[0]>point_select[1]:
+                        data= data[(data>point_select[0])|(data<point_select[1])]
+                    else:
+                        content.nbins = point_select[1]-point_select[0]
+                        data = data[(data>point_select[0] )& (data<point_select[1])]
+
                 percents.append(np.histogram(
-                   data, bins=content.nbins, density=True)[0])
+                   data, bins=content.nbins, range=(0, content.nbins), density=True)[0])
                 values.append(np.histogram(
                    data, bins=content.nbins, density=False)[0])
                 print('folder: {}, photo:({}/{})'.format(folder_idx, j+1, len(folder)))
@@ -258,7 +280,7 @@ class StartPage(tk.Frame):
         content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//2),
                                                 column = self.num_graphs % 2, pady=20, padx=15)
         self.num_graphs+=1
-    def create_histogram(self, content, lab=False, channel=1):
+    def create_histogram(self, content, space=None, channel=None):
         folder1_idx = len(content.images[0])
         folders = [content.percents.T.iloc[:folder1_idx], content.percents.T.iloc[folder1_idx:]]
         fig = plt.figure()
@@ -266,7 +288,7 @@ class StartPage(tk.Frame):
 
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
-        if lab==True:
+        if space=='CIE L*A*B*':
             cm= plt.cm.cool if channel==1 else plt.cm.cividis
             indices = np.arange(content.nbins)
         else:
@@ -282,7 +304,7 @@ class StartPage(tk.Frame):
             indices = indices[0]
         cmaplist = [cm(i) for i in range(cm.N)]
         cmaplist = deque(cmaplist)
-        if lab==False:
+        if space=='HSV' and channel==0:
             cmaplist.rotate(30)
             cmaplist.reverse()
         cm = matplotlib.colors.LinearSegmentedColormap.from_list(
@@ -295,7 +317,7 @@ class StartPage(tk.Frame):
         for i, folder in enumerate(folders):
             data = folder.mean().values
             data = deque(data)
-            if lab==False:
+            if space== 'HSV' and channel==1:
                 data.rotate(30)
                 data.reverse()
             data = np.array(data)
@@ -415,6 +437,8 @@ def set_points(from_x, to_x, fig, ax, RS, times):
     point_select = (from_x, to_x)
     print('from:{}, to:{}'.format(point_select[0],point_select[1]))
 
+def setter(a, b):
+    a = b
 
 
 app = GuiApp()
