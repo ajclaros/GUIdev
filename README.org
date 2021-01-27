@@ -14,7 +14,7 @@ Analysis includes:
 - Heatmap comparing statistics/p-values of a given test
 [[./testing/screenshot.png]]
 
-Histogram of CIE L*A*B channel 2
+Histogram of CIE L*A*B* channel 2
 d[[./testing/cielab_000.png]]
 
 Added color range selection
