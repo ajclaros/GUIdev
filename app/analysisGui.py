@@ -14,6 +14,7 @@ from PIL import Image, ImageTk
 from tkinter import filedialog
 import pandas as pd
 from scipy import stats
+from pathlib import Path
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -21,7 +22,7 @@ LARGE_FONT= ("Verdana", 12)
 point_select = None
 times = 0
 bg=None
-home_folder = os.getcwd()
+home_folder = Path().resolve().parent
 class GuiApp(tk.Tk):
 
 
