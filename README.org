@@ -34,6 +34,11 @@ Select by:
 - conda install -c anaconda seaborn
 - pip install opencv-python
 * using script
-- open in spyder
+- open ./app/analysisGui.py in spyder
 - run script (green play button)
-- 
+- select color channel of a color space to analyze: (H, S, V), (L*, A*, B*), (B,G,R))
+- select plots for the color channel
+- type number of bins to use (resolution of the distribution, 255 is default)
+- if there is a range within a color channel that is preffered press the button to select "color range picker"
+- select the folder of one of the color morphs, press again to select the second folder, images will automatically be generated after two folders are selected
+- select export to export graphs
