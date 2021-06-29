@@ -24,3 +24,16 @@ Select by:
 - Inverting selection
 - Rotating color bar to center specified region
 [[./testing/colorselection.gif]]
+
+* Installation
+- install anaconda
+- conda create -n environment-name python=3.8 matplotlib seaborn
+** using with existing environment
+- for an existing anaconda environment such as that with the score log analysis
+- conda activate analysis
+- conda install -c seaborn
+- pip install opencv-python
+* using script
+- open in spyder
+- run script (green play button)
+- 
