@@ -41,4 +41,4 @@ Select by:
 - type number of bins to use (resolution of the distribution, 255 is default)
 - if there is a range within a color channel that is preffered press the button to select "color range picker"
 - select the folder of one of the color morphs, press again to select the second folder, images will automatically be generated after two folders are selected
-- select export to export graphs
+- select export to export graphs and data
