@@ -93,7 +93,7 @@ class StartPage(tk.Frame):
                                       command=lambda: self.select_directory(controller, known='no')))
         buttons.append(tk.Button(self, text='Color Range picker',
                                  command = lambda:self.color_picker(controller)))
-        buttons.append(tk.Label(self, text='Num Bins: '))"
+        buttons.append(tk.Label(self, text='Num Bins: '))
         buttons.append(tk.Entry(self, textvariable=nbins))
         buttons.append(tk.Button(self, text='Set', command = lambda:[setattr(controller, 'nbins', nbins.get()), print('Set nbins to {}'.format(controller.nbins))]))
         
