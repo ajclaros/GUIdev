@@ -14,6 +14,7 @@ from PIL import Image, ImageTk
 from tkinter import filedialog
 import pandas as pd
 from scipy import stats
+import pathlib
 from pathlib import Path
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
