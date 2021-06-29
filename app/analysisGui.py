@@ -86,16 +86,17 @@ class StartPage(tk.Frame):
         colorspace.append(tk.Radiobutton(self, text = "R", variable = self.choice, value = 8))
         buttons.append(tk.Button(self, text="Quit",
                                   command = lambda: controller.destroy() ))
-        buttons.append(tk.Button(self, text="Select Directory",
-                                      command=lambda: self.select_directory(controller, known='yes')))
-        buttons.append(tk.Button(self, text='Color Range picker',
-                                 command = lambda:self.color_picker(controller)))
-        buttons.append(tk.Label(self, text='Num Bins: '))
-        buttons.append(tk.Entry(self, textvariable=nbins))
-        buttons.append(tk.Button(self, text='Set', command = lambda:[setattr(controller, 'nbins', nbins.get()), print('Set nbins to {}'.format(controller.nbins))]))
         #develop exporting function
         buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir(".."),os.mkdir('exports'), os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts'),[x.savefig('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
 
+        buttons.append(tk.Button(self, text="Select Directory",
+                                      command=lambda: self.select_directory(controller, known='no')))
+        buttons.append(tk.Button(self, text='Color Range picker',
+                                 command = lambda:self.color_picker(controller)))
+        buttons.append(tk.Label(self, text='Num Bins: '))"
+        buttons.append(tk.Entry(self, textvariable=nbins))
+        buttons.append(tk.Button(self, text='Set', command = lambda:[setattr(controller, 'nbins', nbins.get()), print('Set nbins to {}'.format(controller.nbins))]))
+        
 
         checkboxes.append(ttk.Checkbutton(self, text= 'Histogram', variable = self.true_vals[1]))
         checkboxes.append(ttk.Checkbutton(self, text= 'Radarplot', variable = self.true_vals[2]))
