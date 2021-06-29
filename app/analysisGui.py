@@ -91,7 +91,15 @@ class StartPage(tk.Frame):
         buttons.append(tk.Button(self, text="Quit",
                                   command = lambda: controller.destroy() ))
         #develop exporting function
-        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[x.print_png('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
+        buttons.append(tk.Button(self, text='Export', command = lambda:[os.chdir('{}'.format(home_folder)),
+                                 pathlib.Path('exports').mkdir(parents=True,
+                                 exist_ok=True),
+                                 os.chdir('exports'),
+                                 controller.percents.to_csv('percents.csv'),
+                                 controller.values.to_csv('counts.csv'),
+#                                 [print(dir(x)) for x in controller.panels]
+                                                                   [x[1].print_png('{}.png'.format(x[0])) for x in enumerate(controller.panels)]
+                                                                   ]))
         #buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[print(type(x)) for x in controller.panels]]))
 
         buttons.append(tk.Button(self, text="Select Directory",
