@@ -92,7 +92,7 @@ class StartPage(tk.Frame):
                                   command = lambda: controller.destroy() ))
         #develop exporting function
         #buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[x.print_jpeg('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
-        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[print(type(x) for x in controller.panels]]))
+        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[print(type(x)) for x in controller.panels]]))
 
         buttons.append(tk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='no')))
