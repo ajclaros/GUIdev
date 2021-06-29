@@ -21,7 +21,9 @@ LARGE_FONT= ("Verdana", 12)
 point_select = None
 times = 0
 bg=None
+home_folder = os.getcwd()
 class GuiApp(tk.Tk):
+
 
     def __init__(self, *args, **kwargs):
 
@@ -87,7 +89,7 @@ class StartPage(tk.Frame):
         buttons.append(tk.Button(self, text="Quit",
                                   command = lambda: controller.destroy() ))
         #develop exporting function
-        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir(".."),os.mkdir('exports'), os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts'),[x.savefig('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
+        buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}/exports'.format(home_folder), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts'),[x.savefig('{}.png'.format(x.figure.texts[0].get_text[0])) for x in controller.panels]]))
 
         buttons.append(tk.Button(self, text="Select Directory",
                                       command=lambda: self.select_directory(controller, known='no')))
