@@ -41,10 +41,10 @@ class GuiApp(tk.Tk):
         self.channel = None
         self.bin_range = False
         container = tk.Frame(self)
+
         container.grid(row=0, column=0)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
-
         self.frames = {}
         self.pages = [StartPage]
         for F in self.pages:
@@ -103,7 +103,7 @@ class StartPage(tk.Frame):
         #buttons.append(tk.Button(self, text='Export', command = lambda: [os.chdir('{}'.format(home_folder)),pathlib.Path('exports').mkdir(parents=True, exist_ok=True),os.chdir('exports'), controller.percents.to_csv('percents.csv'), controller.values.to_csv('counts.csv'),[print(type(x)) for x in controller.panels]]))
 
         buttons.append(tk.Button(self, text="Select Directory",
-                                      command=lambda: self.select_directory(controller, known='no')))
+                                      command=lambda: self.select_directory(controller, known='yes')))
         buttons.append(tk.Button(self, text='Color Range picker',
                                  command = lambda:self.color_picker(controller)))
         buttons.append(tk.Label(self, text='Num Bins: '))
@@ -122,7 +122,10 @@ class StartPage(tk.Frame):
         for i, box in enumerate(checkboxes):
             box.grid(row=1, column = i)
         for i, button in enumerate(buttons):
-            button.grid(row=0, column=i)
+            if i==0:
+                button.grid(row=0, column=0)
+            else:
+                button.grid(row=0, column=i)
     def getSelected(self):
         choice = self.choice.get()
         if choice//3 == 0:
@@ -272,7 +275,7 @@ class StartPage(tk.Frame):
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//3),
-                                                column = self.num_graphs % 3, pady=20, padx=15)
+                                                column = self.num_graphs % 3*10, pady=20, padx=15, columnspan=10)
         self.num_graphs+=1
 
 
@@ -292,13 +295,13 @@ class StartPage(tk.Frame):
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//2),
-                                                column = self.num_graphs % 2, pady=20, padx=15)
+                                                column = self.num_graphs % 2*10, pady=20, padx=15, columnspan=10)
         self.num_graphs+=1
     def create_histogram(self, content, space=None, channel=None):
         folder1_idx = len(content.images[0])
         folders = [content.percents.T.iloc[:folder1_idx], content.percents.T.iloc[folder1_idx:]]
-        fig = plt.figure()
-        #fig = plt.figure(figsize=(20,10))
+        #fig = plt.figure()
+        fig = plt.figure(figsize=(16,8))
 
         ax = fig.add_axes([0.05, 0.2, 0.9, 0.7])
         ax1 = fig.add_axes([0.05, 0.1, 0.9, 0.1])
@@ -343,17 +346,16 @@ class StartPage(tk.Frame):
             label = label.split('/')
             label = label[-1]
             ax.plot(np.arange(data.size), data, label = label, color=folder_colors[i], linewidth=2)
-            ax.errorbar(np.arange(data.size), data, yerr = err, fmt = 'o')
+            ax.errorbar(np.arange(data.size),  data, yerr = err, ms = 4,fmt='o')
         ax.legend()
         ax.set_title("{}, channel:{}".format(content.colorspace, content.channel))
-        #ax.set_xlim(indices[0],indices[-1])
-        #ax1.set_xlim(indices[0], indices[-1])
-        #plt.tight_layout()
-#       ax.set_ylim(0, 0.0002)
+        start, end = ax1.get_xlim()
+        ax1.xaxis.set_ticks(np.arange(start, end, 20))
         content.panels.append(FigureCanvasTkAgg(fig, self))
         content.panels[-1].draw()
         content.panels[-1].get_tk_widget().grid(row=5 + (self.num_graphs//3),
-                                                column = self.num_graphs % 3, pady=20, padx=15)
+                                                column = self.num_graphs % 3*10, pady=20, padx=15, columnspan=10)
+
         self.num_graphs+=1
 
 
