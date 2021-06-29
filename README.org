@@ -31,7 +31,7 @@ Select by:
 ** using with existing environment
 - for an existing anaconda environment such as that with the score log analysis
 - conda activate analysis
-- conda install -c seaborn
+- conda install -c anaconda seaborn
 - pip install opencv-python
 * using script
 - open in spyder
